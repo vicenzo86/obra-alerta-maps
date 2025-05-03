@@ -10,8 +10,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Building, Calendar, Home, MapPin, Search } from 'lucide-react';
 import { mockConstructions, getCities, getLicenseTypes, filterConstructions } from '@/data/mockData';
+import useAuth from '@/hooks/useAuth';
 
 const Index = () => {
+  const { user, logout } = useAuth();
   const [selectedTab, setSelectedTab] = useState("map");
   const [selectedConstruction, setSelectedConstruction] = useState<Construction | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -74,7 +76,17 @@ const Index = () => {
   return (
     <main className="flex flex-col min-h-screen bg-background">
       <div className="container px-4 py-6 mx-auto max-w-7xl flex-1 flex flex-col">
-        <h1 className="text-3xl font-bold mb-6">Obra Alerta Maps</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">Obra Alerta Maps</h1>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground mr-2">
+              {user?.email}
+            </span>
+            <Button variant="outline" size="sm" onClick={logout}>
+              Sair
+            </Button>
+          </div>
+        </div>
         
         <FilterBar 
           onFilterChange={handleFilterChange} 
