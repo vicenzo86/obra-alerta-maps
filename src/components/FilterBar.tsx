@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -10,6 +9,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale/pt-BR';
 import { ConstructionFilter } from '@/types/construction';
 import { Input } from '@/components/ui/input';
+import { DateRange } from 'react-day-picker';
 
 interface FilterBarProps {
   onFilterChange: (filter: ConstructionFilter) => void;
@@ -25,10 +25,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
   licenseTypes
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateRange, setDateRange] = useState<{
-    from?: Date;
-    to?: Date;
-  }>({});
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [status, setStatus] = useState<'all' | 'approved' | 'pending'>('all');
   const [selectedCity, setSelectedCity] = useState<string>('');
   const [selectedLicenseType, setSelectedLicenseType] = useState<string>('');
@@ -37,8 +34,8 @@ const FilterBar: React.FC<FilterBarProps> = ({
     onFilterChange({
       status: status,
       dateRange: {
-        start: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
-        end: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+        start: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+        end: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
       },
       city: selectedCity || undefined,
       licenseType: selectedLicenseType || undefined,
@@ -46,7 +43,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
   };
 
   const handleClearFilters = () => {
-    setDateRange({});
+    setDateRange(undefined);
     setStatus('all');
     setSelectedCity('');
     setSelectedLicenseType('');
@@ -106,7 +103,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                         selected={dateRange}
                         onSelect={setDateRange}
                         locale={ptBR}
-                        className="rounded-md border"
+                        className="rounded-md border pointer-events-auto"
                       />
                     </div>
                   </TabsContent>
@@ -122,7 +119,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
                           }
                         }}
                         locale={ptBR}
-                        className="rounded-md border"
+                        className="rounded-md border pointer-events-auto"
                       />
                     </div>
                   </TabsContent>
