@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { Eye, EyeOff, Lock, User } from 'lucide-react';
+import useAuth from '@/hooks/useAuth';
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: 'Email inválido' }),
@@ -22,6 +23,7 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuth();
   
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -34,9 +36,8 @@ const Login = () => {
   const onSubmit = (data: LoginFormValues) => {
     // For demo purposes, we'll just check if the email and password match a test account
     if (data.email === 'demo@example.com' && data.password === 'password123') {
-      // Store authentication state
-      localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('user', JSON.stringify({ email: data.email }));
+      // Use the login function from auth context
+      login(data.email);
       
       toast({
         title: 'Login bem-sucedido',
