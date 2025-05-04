@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import MapFallbackView from '@/components/MapFallbackView';
 import { useMapbox } from '@/hooks/useMapbox';
+import { isMobileDevice } from '@/utils/webGLDetection';
 
 interface MapProps {
   constructions: Construction[];
@@ -34,6 +35,8 @@ const Map: React.FC<MapProps> = ({
     zoom
   });
 
+  const isMobile = isMobileDevice();
+
   return (
     <div className={cn('relative w-full h-full rounded-lg overflow-hidden', className)}>
       {!mapboxSupported ? (
@@ -46,6 +49,7 @@ const Map: React.FC<MapProps> = ({
       <div 
         ref={mapContainer} 
         className={`map-container h-full ${!mapboxSupported ? 'hidden' : ''}`} 
+        data-is-mobile={isMobile ? "true" : "false"}
       />
       {mapError && mapboxSupported && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-lg text-sm">

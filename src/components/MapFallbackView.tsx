@@ -2,7 +2,8 @@
 import React from 'react';
 import { Construction } from '@/types/construction';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertCircle, MapPin } from 'lucide-react';
+import { AlertCircle, MapPin, SmartphoneIcon } from 'lucide-react';
+import { isMobileDevice } from '@/utils/webGLDetection';
 
 interface MapFallbackViewProps {
   constructions: Construction[];
@@ -15,13 +16,17 @@ const MapFallbackView: React.FC<MapFallbackViewProps> = ({
   error, 
   onMarkerClick 
 }) => {
+  const isMobile = isMobileDevice();
+  
   return (
     <div className="p-4 bg-white rounded-lg shadow overflow-auto max-h-full flex flex-col gap-4">
       <Alert variant="default">
-        <AlertCircle className="h-5 w-5" />
-        <AlertTitle>Visualização em Lista</AlertTitle>
+        {isMobile ? <SmartphoneIcon className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+        <AlertTitle>{isMobile ? "Modo Compatível para Dispositivos Móveis" : "Visualização em Lista"}</AlertTitle>
         <AlertDescription>
-          {error || "O mapa interativo não está disponível no seu dispositivo."}
+          {error || (isMobile 
+            ? "O mapa interativo não está disponível no seu dispositivo móvel." 
+            : "O mapa interativo não está disponível no seu navegador.")}
         </AlertDescription>
       </Alert>
       

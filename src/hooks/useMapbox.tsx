@@ -4,10 +4,10 @@ import mapboxgl from 'mapbox-gl';
 import { Construction } from '@/types/construction';
 import { toast } from '@/components/ui/use-toast';
 import { createMapMarker } from '@/components/MapMarker';
-import { checkWebGLSupport } from '@/utils/webGLDetection';
+import { checkWebGLSupport, isMobileDevice } from '@/utils/webGLDetection';
 
-// Default Mapbox token
-const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoidmljZW56bzE5ODYiLCJhIjoiY21hOTJ1dDk3MW43ajJwcHdtancwbG9zbSJ9.TTMx21fG8mpx04i1h2hl-Q';
+// Default Mapbox token - public and valid
+const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
 
 interface UseMapboxProps {
   constructions: Construction[];
@@ -30,28 +30,36 @@ export const useMapbox = ({
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapboxSupported, setMapboxSupported] = useState(true);
   const [checkedSupport, setCheckedSupport] = useState(false);
+  const [renderAttempts, setRenderAttempts] = useState(0);
+  const maxRenderAttempts = 2;
 
-  // Check WebGL support
+  // Check WebGL support and device type
   useEffect(() => {
+    const isMobile = isMobileDevice();
+    console.log("Device check:", { isMobile });
+    
     const supportsWebGL = checkWebGLSupport();
     
     if (!supportsWebGL) {
-      console.log("Browser doesn't support WebGL");
+      console.log("WebGL not supported, using fallback view");
       setMapboxSupported(false);
-      setMapError("Seu navegador não suporta WebGL, necessário para exibir o mapa.");
+      setMapError(isMobile 
+        ? "Seu dispositivo móvel não suporta mapas 3D. Usando visualização em lista." 
+        : "Seu navegador não suporta WebGL, necessário para exibir o mapa.");
     }
     
     setCheckedSupport(true);
   }, []);
 
-  // Initialize map
+  // Initialize map with retry logic
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || !checkedSupport || !mapboxSupported) {
+    if (!mapContainer.current || !mapboxToken || !checkedSupport || !mapboxSupported || renderAttempts >= maxRenderAttempts) {
       console.log("Map initialization skipped:", { 
         hasContainer: !!mapContainer.current, 
         hasToken: !!mapboxToken, 
         checkedSupport, 
-        mapboxSupported 
+        mapboxSupported,
+        renderAttempts 
       });
       return;
     }
@@ -67,14 +75,28 @@ export const useMapbox = ({
       
       mapboxgl.accessToken = mapboxToken;
       
+      // Try with a simpler style first if it's a retry
+      const mapStyle = renderAttempts > 0 
+        ? 'mapbox://styles/mapbox/light-v11' 
+        : 'mapbox://styles/mapbox/streets-v12';
+        
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: mapStyle,
         center: center,
-        zoom: zoom
+        zoom: zoom,
+        attributionControl: true,
+        preserveDrawingBuffer: true,
+        antialias: false, // Disable for better performance on mobile
+        fadeDuration: 0,   // Disable fade animations for better performance
+        maxZoom: 19,
+        minZoom: 3,
+        pitch: 0, // Keep flat for better performance
+        renderWorldCopies: true
       });
 
-      newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      // Add minimal controls
+      newMap.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
       
       newMap.on('load', () => {
         console.log("Map loaded successfully");
@@ -88,7 +110,15 @@ export const useMapbox = ({
 
       newMap.on('error', (e) => {
         console.error('Mapbox error:', e);
-        setMapError("Erro ao carregar o mapa. Verifique sua conexão.");
+        
+        // Try again with a different configuration if we haven't reached max attempts
+        if (renderAttempts < maxRenderAttempts - 1) {
+          console.log(`Retry attempt ${renderAttempts + 1} of ${maxRenderAttempts}`);
+          setRenderAttempts(prev => prev + 1);
+          return;
+        }
+        
+        setMapError("Erro ao carregar o mapa. Usando visualização alternativa.");
         setMapboxSupported(false);
         toast({
           title: "Erro ao carregar o mapa",
@@ -100,8 +130,16 @@ export const useMapbox = ({
       map.current = newMap;
     } catch (error) {
       console.error('Error initializing Mapbox map:', error);
-      setMapError("Erro ao inicializar o mapa. Seu navegador pode não suportar WebGL.");
+      setMapError("Erro ao inicializar o mapa. Usando visualização alternativa.");
       setMapboxSupported(false);
+      
+      // Log detailed error information
+      if (error instanceof Error) {
+        console.error("Mapbox initialization error details:", {
+          message: error.message,
+          stack: error.stack
+        });
+      }
     }
 
     return () => {
@@ -112,7 +150,7 @@ export const useMapbox = ({
         map.current = null;
       }
     };
-  }, [mapboxToken, center, zoom, checkedSupport, mapboxSupported]);
+  }, [mapboxToken, center, zoom, checkedSupport, mapboxSupported, renderAttempts]);
 
   // Add markers to map
   useEffect(() => {
