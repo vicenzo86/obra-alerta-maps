@@ -16,8 +16,8 @@ interface MapProps {
   zoom?: number;
 }
 
-// Default Mapbox public token - replace this with your own in production
-const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibG92YWJsZSIsImEiOiJjbHBoOHBvcW0wMGV3MmpteXQ0eGRzOXJuIn0.J6O-2PTjtAqKNvl41IMPDg';
+// Using the provided Mapbox token
+const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoidmljZW56bzE5ODYiLCJhIjoiY21hOTJ1dDk3MW43ajJwcHdtancwbG9zbSJ9.TTMx21fG8mpx04i1h2hl-Q';
 
 const Map: React.FC<MapProps> = ({ 
   constructions, 
@@ -225,7 +225,7 @@ const Map: React.FC<MapProps> = ({
 
   return (
     <div className={cn('relative w-full h-full rounded-lg overflow-hidden', className)}>
-      {!mapboxToken || mapboxToken === DEFAULT_MAPBOX_TOKEN ? (
+      {!mapboxToken || mapboxToken === '' ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-6 z-10">
           <h3 className="text-lg font-medium mb-4">Configuração do Mapa</h3>
           <p className="text-center text-gray-600 mb-4">
@@ -247,7 +247,7 @@ const Map: React.FC<MapProps> = ({
               localStorage.setItem('mapbox_token', DEFAULT_MAPBOX_TOKEN);
             }}
           >
-            Usar token padrão (limitado)
+            Usar token padrão
           </Button>
           <p className="text-xs text-gray-500 text-center mt-4">
             Você pode encontrar seu token em <a href="https://account.mapbox.com" target="_blank" rel="noopener noreferrer" className="text-blue-600">account.mapbox.com</a>
