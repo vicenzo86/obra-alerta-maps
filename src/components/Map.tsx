@@ -29,7 +29,7 @@ const Map: React.FC<MapProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState<string>(DEFAULT_MAPBOX_TOKEN);
+  const [mapboxToken] = useState<string>(DEFAULT_MAPBOX_TOKEN);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
@@ -39,9 +39,25 @@ const Map: React.FC<MapProps> = ({
   // Check if WebGL is supported before initializing map
   useEffect(() => {
     try {
+      // More robust WebGL detection
       const canvas = document.createElement('canvas');
-      const supportsWebGL = !!(window.WebGLRenderingContext && 
-        (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+      let gl = null;
+      
+      try {
+        gl = canvas.getContext('webgl') || 
+             canvas.getContext('experimental-webgl') || 
+             canvas.getContext('webgl2');
+      } catch (e) {
+        console.error("Error getting WebGL context:", e);
+      }
+      
+      const supportsWebGL = !!(gl && gl instanceof WebGLRenderingContext);
+      
+      console.log("WebGL support check:", {
+        hasWebGLRenderingContext: !!window.WebGLRenderingContext,
+        context: gl,
+        supported: supportsWebGL
+      });
       
       if (!supportsWebGL) {
         console.log("Browser doesn't support WebGL");
@@ -57,17 +73,17 @@ const Map: React.FC<MapProps> = ({
     }
   }, []);
 
-  // Get the Mapbox token from localStorage or use default
-  useEffect(() => {
-    const savedToken = localStorage.getItem('mapbox_token');
-    if (savedToken) {
-      setMapboxToken(savedToken);
-    }
-  }, []);
-
   // Initialize map if WebGL is supported
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken || !checkedSupport || !mapboxSupported) return;
+    if (!mapContainer.current || !mapboxToken || !checkedSupport || !mapboxSupported) {
+      console.log("Map initialization skipped:", { 
+        hasContainer: !!mapContainer.current, 
+        hasToken: !!mapboxToken, 
+        checkedSupport, 
+        mapboxSupported 
+      });
+      return;
+    }
 
     // Cleanup previous map if it exists
     if (map.current) {
@@ -76,6 +92,8 @@ const Map: React.FC<MapProps> = ({
     }
 
     try {
+      console.log("Initializing Mapbox with token:", mapboxToken);
+      
       mapboxgl.accessToken = mapboxToken;
       
       const newMap = new mapboxgl.Map({
@@ -88,6 +106,7 @@ const Map: React.FC<MapProps> = ({
       newMap.addControl(new mapboxgl.NavigationControl(), 'top-right');
       
       newMap.on('load', () => {
+        console.log("Map loaded successfully");
         setMapLoaded(true);
         setMapError(null);
         toast({
@@ -98,10 +117,11 @@ const Map: React.FC<MapProps> = ({
 
       newMap.on('error', (e) => {
         console.error('Mapbox error:', e);
-        setMapError("Erro ao carregar o mapa. Verifique seu token do Mapbox.");
+        setMapError("Erro ao carregar o mapa. Verifique sua conexão.");
+        setMapboxSupported(false);
         toast({
           title: "Erro ao carregar o mapa",
-          description: "Verifique seu token do Mapbox e tente novamente.",
+          description: "Não foi possível carregar o mapa. Usando visualização alternativa.",
           variant: "destructive"
         });
       });
@@ -247,38 +267,11 @@ const Map: React.FC<MapProps> = ({
 
   return (
     <div className={cn('relative w-full h-full rounded-lg overflow-hidden', className)}>
-      {!mapboxToken ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-6 z-10">
-          <h3 className="text-lg font-medium mb-4">Configuração do Mapa</h3>
-          <p className="text-center text-gray-600 mb-4">
-            Por favor, entre com seu token público do Mapbox para habilitar o mapa.
-          </p>
-          <input
-            type="text"
-            className="w-full p-2 border rounded mb-4"
-            placeholder="Token público do Mapbox"
-            onChange={(e) => {
-              localStorage.setItem('mapbox_token', e.target.value);
-              setMapboxToken(e.target.value);
-            }}
-          />
-          <Button 
-            variant="outline"
-            onClick={() => {
-              setMapboxToken(DEFAULT_MAPBOX_TOKEN);
-              localStorage.setItem('mapbox_token', DEFAULT_MAPBOX_TOKEN);
-            }}
-          >
-            Usar token padrão
-          </Button>
-          <p className="text-xs text-gray-500 text-center mt-4">
-            Você pode encontrar seu token em <a href="https://account.mapbox.com" target="_blank" rel="noopener noreferrer" className="text-blue-600">account.mapbox.com</a>
-          </p>
-        </div>
-      ) : !mapboxSupported ? (
-        renderFallbackView()
-      ) : null}
-      <div ref={mapContainer} className="map-container h-full" />
+      {!mapboxSupported ? renderFallbackView() : null}
+      <div 
+        ref={mapContainer} 
+        className={`map-container h-full ${!mapboxSupported ? 'hidden' : ''}`} 
+      />
       {mapError && mapboxSupported && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white px-4 py-2 rounded-full shadow-lg text-sm">
           Erro no mapa. <Button variant="link" className="p-0 h-auto" onClick={() => window.location.reload()}>Recarregar</Button>
