@@ -6,7 +6,8 @@ import { Construction } from '@/types/construction';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
-import { MapPin } from 'lucide-react';
+import { AlertCircle, MapPin } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface MapProps {
   constructions: Construction[];
@@ -28,25 +29,45 @@ const Map: React.FC<MapProps> = ({
 }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapboxToken, setMapboxToken] = useState<string>('');
+  const [mapboxToken, setMapboxToken] = useState<string>(DEFAULT_MAPBOX_TOKEN);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapboxSupported, setMapboxSupported] = useState(true);
+  const [checkedSupport, setCheckedSupport] = useState(false);
 
-  // Get the Mapbox token from localStorage or use default
-  const getMapboxToken = () => {
-    const savedToken = localStorage.getItem('mapbox_token');
-    return savedToken || DEFAULT_MAPBOX_TOKEN;
-  };
-
+  // Check if WebGL is supported before initializing map
   useEffect(() => {
-    const token = getMapboxToken();
-    setMapboxToken(token);
+    try {
+      const canvas = document.createElement('canvas');
+      const supportsWebGL = !!(window.WebGLRenderingContext && 
+        (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+      
+      if (!supportsWebGL) {
+        console.log("Browser doesn't support WebGL");
+        setMapboxSupported(false);
+        setMapError("Seu navegador não suporta WebGL, necessário para exibir o mapa.");
+      }
+      setCheckedSupport(true);
+    } catch (e) {
+      console.error("Error checking WebGL support:", e);
+      setMapboxSupported(false);
+      setMapError("Erro ao verificar suporte para WebGL.");
+      setCheckedSupport(true);
+    }
   }, []);
 
+  // Get the Mapbox token from localStorage or use default
   useEffect(() => {
-    if (!mapContainer.current || !mapboxToken) return;
+    const savedToken = localStorage.getItem('mapbox_token');
+    if (savedToken) {
+      setMapboxToken(savedToken);
+    }
+  }, []);
+
+  // Initialize map if WebGL is supported
+  useEffect(() => {
+    if (!mapContainer.current || !mapboxToken || !checkedSupport || !mapboxSupported) return;
 
     // Cleanup previous map if it exists
     if (map.current) {
@@ -56,14 +77,6 @@ const Map: React.FC<MapProps> = ({
 
     try {
       mapboxgl.accessToken = mapboxToken;
-      
-      // Check if WebGL is supported
-      if (!mapboxgl.supported()) {
-        setMapboxSupported(false);
-        setMapError("Seu navegador não suporta WebGL, necessário para exibir o mapa.");
-        console.log("Browser doesn't support WebGL");
-        return;
-      }
       
       const newMap = new mapboxgl.Map({
         container: mapContainer.current,
@@ -97,11 +110,7 @@ const Map: React.FC<MapProps> = ({
     } catch (error) {
       console.error('Error initializing Mapbox map:', error);
       setMapError("Erro ao inicializar o mapa. Seu navegador pode não suportar WebGL.");
-      toast({
-        title: "Erro ao inicializar o mapa",
-        description: "Verifique se o token do Mapbox é válido ou se seu navegador suporta WebGL.",
-        variant: "destructive"
-      });
+      setMapboxSupported(false);
     }
 
     return () => {
@@ -112,8 +121,9 @@ const Map: React.FC<MapProps> = ({
         map.current = null;
       }
     };
-  }, [mapboxToken, center, zoom]);
+  }, [mapboxToken, center, zoom, checkedSupport, mapboxSupported]);
 
+  // Add markers to map
   useEffect(() => {
     if (!map.current || !mapLoaded || !mapboxToken || !mapboxSupported) return;
     
@@ -184,48 +194,60 @@ const Map: React.FC<MapProps> = ({
   // Render fallback list view when WebGL is not supported
   const renderFallbackView = () => {
     return (
-      <div className="p-4 bg-white rounded-lg shadow overflow-auto max-h-full">
-        <div className="mb-4 text-center">
-          <MapPin className="h-12 w-12 text-primary mx-auto mb-2" />
-          <h3 className="text-lg font-semibold">Visualização em Lista</h3>
-          <p className="text-sm text-muted-foreground mb-4">
+      <div className="p-4 bg-white rounded-lg shadow overflow-auto max-h-full flex flex-col gap-4">
+        <Alert variant="default">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Visualização em Lista</AlertTitle>
+          <AlertDescription>
             {mapError || "O mapa interativo não está disponível no seu dispositivo."}
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
         
-        <div className="space-y-3">
-          {constructions.map((construction) => (
-            <div 
-              key={construction.id}
-              className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50"
-              onClick={() => onMarkerClick?.(construction)}
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{construction.address}</p>
-                  <p className="text-sm text-muted-foreground">{construction.companyName}</p>
+        {constructions.length > 0 ? (
+          <div className="space-y-3">
+            {constructions.map((construction) => (
+              <div 
+                key={construction.id}
+                className="border rounded-lg p-3 cursor-pointer hover:bg-gray-50"
+                onClick={() => onMarkerClick?.(construction)}
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{construction.address || 'Endereço não informado'}</p>
+                    <p className="text-sm text-muted-foreground">{construction.companyName}</p>
+                  </div>
+                  <div className={`px-2 py-1 rounded text-xs ${
+                    construction.status === 'approved' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {construction.status === 'approved' ? 'Aprovado' : 'Pendente'}
+                  </div>
                 </div>
-                <div className={`px-2 py-1 rounded text-xs ${
-                  construction.status === 'approved' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {construction.status === 'approved' ? 'Aprovado' : 'Pendente'}
+                <div className="mt-2 text-sm">
+                  <span className="font-medium">Área:</span> {construction.constructionArea}m²
                 </div>
+                {construction.latitude && construction.longitude && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Localização: {construction.latitude.toFixed(4)}, {construction.longitude.toFixed(4)}
+                  </div>
+                )}
               </div>
-              <div className="mt-2 text-sm">
-                <span className="font-medium">Área:</span> {construction.constructionArea}m²
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-10">
+            <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground">Nenhum registro encontrado</p>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
     <div className={cn('relative w-full h-full rounded-lg overflow-hidden', className)}>
-      {!mapboxToken || mapboxToken === '' ? (
+      {!mapboxToken ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 p-6 z-10">
           <h3 className="text-lg font-medium mb-4">Configuração do Mapa</h3>
           <p className="text-center text-gray-600 mb-4">
