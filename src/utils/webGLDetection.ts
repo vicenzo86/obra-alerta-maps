@@ -15,6 +15,20 @@ export const checkWebGLSupport = (): boolean => {
     
     console.log("Device detection:", { isMobile, userAgent });
     
+    // Para dispositivos móveis, vamos tentar ser mais permissivos
+    if (isMobile) {
+      // Em dispositivos móveis, vamos checar primeiro se o navegador é recente o suficiente
+      // A maioria dos navegadores móveis modernos suporta WebGL
+      const isRecentMobileBrowser = /Chrome\/([0-9]+)/.test(userAgent) || 
+                                   /Firefox\/([0-9]+)/.test(userAgent) || 
+                                   /Safari\/([0-9]+)/.test(userAgent);
+      
+      if (isRecentMobileBrowser) {
+        console.log("Navegador móvel moderno detectado, assumindo suporte a WebGL");
+        return true;
+      }
+    }
+    
     const canvas = document.createElement('canvas');
     let gl = null;
     
@@ -64,5 +78,24 @@ export const checkWebGLSupport = (): boolean => {
  */
 export const isMobileDevice = (): boolean => {
   const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-  return /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+  
+  // Detecta tablets também como dispositivos móveis
+  const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini|mobile|tablet/i.test(userAgent.toLowerCase());
+  
+  // Também verifica por características de touchscreen
+  const hasTouch = 'ontouchstart' in window || 
+                  navigator.maxTouchPoints > 0 || 
+                  (navigator as any).msMaxTouchPoints > 0;
+                  
+  const isMobileViewport = window.innerWidth < 768;
+  
+  console.log("Mobile detection:", { 
+    isMobile, 
+    hasTouch, 
+    isMobileViewport, 
+    viewportWidth: window.innerWidth,
+    userAgent
+  });
+  
+  return isMobile || (hasTouch && isMobileViewport);
 };

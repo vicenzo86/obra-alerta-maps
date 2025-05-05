@@ -5,8 +5,12 @@ import { toast } from '@/components/ui/use-toast';
 import { createMapMarker } from '@/components/MapMarker';
 import { checkWebGLSupport, isMobileDevice } from '@/utils/webGLDetection';
 
-// Use a variável global mapboxgl definida pela tag script no HTML
-declare const mapboxgl: any;
+// Definição do tipo para o objeto global mapboxgl
+declare global {
+  interface Window {
+    mapboxgl: any;
+  }
+}
 
 // Default Mapbox token - public and valid
 const DEFAULT_MAPBOX_TOKEN = 'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';

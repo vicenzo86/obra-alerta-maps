@@ -22,10 +22,10 @@ const MapFallbackView: React.FC<MapFallbackViewProps> = ({
     <div className="p-4 bg-white rounded-lg shadow overflow-auto max-h-full flex flex-col gap-4">
       <Alert variant="default">
         {isMobile ? <SmartphoneIcon className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-        <AlertTitle>{isMobile ? "Modo Compatível para Dispositivos Móveis" : "Visualização em Lista"}</AlertTitle>
+        <AlertTitle>{isMobile ? "Visualização para Dispositivos Móveis" : "Visualização em Lista"}</AlertTitle>
         <AlertDescription>
           {error || (isMobile 
-            ? "O mapa interativo não está disponível no seu dispositivo móvel." 
+            ? "A visualização no mapa interativo não está disponível neste dispositivo móvel, mas você pode acessar todas as informações nesta lista." 
             : "O mapa interativo não está disponível no seu navegador.")}
         </AlertDescription>
       </Alert>
