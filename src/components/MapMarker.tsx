@@ -1,12 +1,12 @@
 
 import { Construction } from '@/types/construction';
-import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 
 interface MarkerOptions {
-  map: mapboxgl.Map;
+  map: any;
   construction: Construction;
   onMarkerClick?: (construction: Construction) => void;
+  mapboxgl: any;
 }
 
 /**
@@ -17,8 +17,9 @@ interface MarkerOptions {
 export const createMapMarker = ({ 
   map, 
   construction, 
-  onMarkerClick 
-}: MarkerOptions): mapboxgl.Marker => {
+  onMarkerClick,
+  mapboxgl 
+}: MarkerOptions): any => {
   const { latitude, longitude, status } = construction;
   
   if (!latitude || !longitude) {

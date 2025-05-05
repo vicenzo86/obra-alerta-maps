@@ -37,6 +37,9 @@ const Map: React.FC<MapProps> = ({
 
   const isMobile = isMobileDevice();
 
+  // Console log para debugging
+  console.log('Map rendering status:', { mapboxSupported, mapError, isMobile });
+
   return (
     <div className={cn('relative w-full h-full rounded-lg overflow-hidden', className)}>
       {!mapboxSupported ? (
