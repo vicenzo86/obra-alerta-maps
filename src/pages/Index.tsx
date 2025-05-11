@@ -112,7 +112,7 @@ const Index = () => {
           </TabsList>
           
           <TabsContent value="map" className="flex-1 min-h-[500px]">
-            <div className="relative h-full rounded-lg overflow-hidden border">
+            <div className="relative h-[500px] min-h-[500px] rounded-lg overflow-hidden border">
               <Map 
                 constructions={filteredConstructions} 
                 onMarkerClick={handleMarkerClick}

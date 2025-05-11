@@ -41,7 +41,7 @@ const Map: React.FC<MapProps> = ({
   console.log('Map rendering status:', { mapboxSupported, mapError, isMobile });
 
   return (
-    <div className={cn('relative w-full h-full rounded-lg overflow-hidden', className)}>
+    <div className={cn('relative w-full h-[500px] min-h-[500px] rounded-lg overflow-hidden', className)}>
       {!mapboxSupported ? (
         <MapFallbackView 
           constructions={constructions} 
@@ -51,7 +51,8 @@ const Map: React.FC<MapProps> = ({
       ) : null}
       <div 
         ref={mapContainer} 
-        className={`map-container h-full ${!mapboxSupported ? 'hidden' : ''}`} 
+        className={`map-container h-[500px] ${!mapboxSupported ? 'hidden' : ''}`} 
+        style={{ minHeight: '500px' }}
         data-is-mobile={isMobile ? "true" : "false"}
       />
       {mapError && mapboxSupported && (
